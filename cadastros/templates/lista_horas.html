@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Horas Trabalhadas - SMC 3Neuron{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="titulo-secao">
+        <div>
+            <h2>Medição de Horas e Atividades</h2>
+            <p style="color: var(--cor-texto-claro); font-size: 0.9rem;">Apontamentos e gestão de horas em contratos/projetos (RF010, RF017)</p>
+        </div>
+
+        <div>
+            <a href="{% url 'registrar_horas' %}" class="btn btn-sucesso">+ Apontar Horas</a>
+        </div>
+    </div>
+
+    <!-- Indicador de Visão de Perfil -->
+    <div class="aviso-visao">
+        <strong>Modo de Exibição:</strong> {{ tipo_visao }}
+    </div>
+
+    <!-- Indicador de Total de Horas Acumuladas (RF011) -->
+    <div class="destaque-horas">
+        <div>
+            <span>Total de Horas Registradas na Visão Atual</span>
+            <h3>Horas Acumuladas</h3>
+        </div>
+        <div>
+            <strong>{{ total_horas }}h</strong>
+        </div>
+    </div>
+
+    <div class="tabela-responsiva">
+        <table>
+            <thead>
+                <tr>
+                    <th>Colaborador</th>
+                    <th>Projeto / Contrato</th>
+                    <th>Data</th>
+                    <th>Horas</th>
+                    <th>Descrição da Atividade</th>
+                    <th>Status</th>
+                    <th style="text-align: center;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for registro in horas %}
+                    <tr>
+                        <td><strong>{{ registro.colaborador.nome_completo }}</strong></td>
+                        <td>{{ registro.nome_projeto }}</td>
+                        <td>{{ registro.data|date:"d/m/Y" }}</td>
+                        <td><strong>{{ registro.horas_trabalhadas }}h</strong></td>
+                        <td>{{ registro.descricao_atividade }}</td>
+                        <td>
+                            <span class="badge-status status-{{ registro.status }}">
+                                {{ registro.get_status_display }}
+                            </span>
+                        </td>
+                        <td style="text-align: center;">
+                            <div class="acoes-tabela" style="justify-content: center;">
+                                <a href="{% url 'editar_horas' registro.id %}" class="btn btn-secundario btn-pequeno">Editar</a>
+                                <a href="{% url 'excluir_horas' registro.id %}" class="btn btn-perigo btn-pequeno" onclick="return confirm('Deseja realmente excluir este lançamento de horas?');">Excluir</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: var(--cor-texto-claro);">
+                            Nenhum registro de horas encontrado para esta visão.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

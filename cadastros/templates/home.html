@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Início - SMC 3Neuron{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="titulo-secao">
+        <h2>Painel Principal do SMC</h2>
+    </div>
+
+    <p>
+        Bem-vindo ao <strong>SMC (Sistema de Medição de Contratos)</strong> da 3Neuron Consultoria. 
+        Este sistema centraliza a gestão cadastral de colaboradores e o acompanhamento detalhado de horas e atividades prestadas em projetos e contratos.
+    </p>
+
+    <div class="grid-atalhos">
+        <div class="card-atalho">
+            <div>
+                <h3>Gestão de Colaboradores</h3>
+                <p>Consulte a equipe técnica, cargos, tipos de contratação e perfis de acesso da consultoria.</p>
+                <p><strong>Total Cadastrado:</strong> {{ total_colaboradores }} colaborador(es)</p>
+            </div>
+            <div style="margin-top: 1rem;">
+                <a href="{% url 'lista_colaboradores' %}" class="btn btn-primario">Acessar Colaboradores</a>
+            </div>
+        </div>
+
+        <div class="card-atalho">
+            <div>
+                <h3>Medição e Horas Trabalhadas</h3>
+                <p>Visualize lançamentos de horas, projetos atendidos e status de aprovação de atividades.</p>
+                <p><strong>Total de Registros:</strong> {{ total_registros }} apontamento(s)</p>
+            </div>
+            <div style="margin-top: 1rem;">
+                <a href="{% url 'lista_horas' %}" class="btn btn-primario">Acessar Horas</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
