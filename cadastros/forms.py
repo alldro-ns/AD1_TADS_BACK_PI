@@ -1,15 +1,28 @@
 from django import forms
+from django.contrib.auth.models import User
 from .models import Colaborador, RegistroHora
 
 
 class ColaboradorForm(forms.ModelForm):
     """
-    Formulário para cadastro e edição de colaboradores.
+    Formulário unificado para cadastro e edição de colaboradores e seus respectivos
+    usuários de login no Django (RF001).
     """
+    nome_usuario = forms.CharField(
+        label="Nome de Usuário (Login)",
+        max_length=150,
+        help_text="Identificador único para o colaborador entrar no sistema."
+    )
+    senha = forms.CharField(
+        label="Senha de Acesso",
+        widget=forms.PasswordInput,
+        required=False,
+        help_text="Defina a senha inicial (na edição, deixe em branco para manter a senha atual)."
+    )
+
     class Meta:
         model = Colaborador
         fields = [
-            'usuario',
             'nome_completo',
             'cpf',
             'email',
@@ -20,19 +33,55 @@ class ColaboradorForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Exibe apenas contas de usuário que ainda não estão vinculadas a nenhum colaborador
-        usuarios_ocupados = Colaborador.objects.filter(usuario__isnull=False)
-        if self.instance and self.instance.pk:
-            usuarios_ocupados = usuarios_ocupados.exclude(pk=self.instance.pk)
+        # Se for edição e já tiver usuário vinculado, preenche o campo nome_usuario
+        if self.instance and self.instance.pk and self.instance.usuario:
+            self.fields['nome_usuario'].initial = self.instance.usuario.username
+        else:
+            # No novo cadastro, a senha é obrigatória
+            self.fields['senha'].required = True
 
-        self.fields['usuario'].queryset = User.objects.exclude(
-            id__in=usuarios_ocupados.values_list('usuario_id', flat=True)
-        )
-        self.fields['usuario'].empty_label = "--- Nenhum (Colaborador sem acesso ao sistema) ---"
-        self.fields['usuario'].required = False
-        self.fields['usuario'].help_text = (
-            "Opcional. Selecione um usuário do sistema para login ou deixe em branco se não possuir login."
-        )
+    def clean_nome_usuario(self):
+        nome_usuario = self.cleaned_data.get('nome_usuario')
+        usuario_atual = self.instance.usuario if (self.instance and self.instance.pk) else None
+
+        # Garante que o username seja único no Django auth_user
+        qs = User.objects.filter(username=nome_usuario)
+        if usuario_atual:
+            qs = qs.exclude(pk=usuario_atual.pk)
+        if qs.exists():
+            raise forms.ValidationError("Este nome de usuário já está em uso no sistema. Escolha outro.")
+        return nome_usuario
+
+    def save(self, commit=True):
+        colaborador = super().save(commit=False)
+        nome_usuario = self.cleaned_data.get('nome_usuario')
+        senha = self.cleaned_data.get('senha')
+        is_admin = (colaborador.perfil == 'ADM')
+
+        if colaborador.usuario:
+            # Atualiza a conta de login existente
+            usuario = colaborador.usuario
+            usuario.username = nome_usuario
+            if senha:
+                usuario.set_password(senha)
+            usuario.is_staff = is_admin
+            usuario.is_superuser = is_admin
+            usuario.email = colaborador.email
+            usuario.save()
+        else:
+            # Cria a conta de login no Django e vincula ao colaborador
+            usuario = User.objects.create_user(
+                username=nome_usuario,
+                password=senha,
+                email=colaborador.email,
+                is_staff=is_admin,
+                is_superuser=is_admin
+            )
+            colaborador.usuario = usuario
+
+        if commit:
+            colaborador.save()
+        return colaborador
 
 
 class RegistroHoraForm(forms.ModelForm):

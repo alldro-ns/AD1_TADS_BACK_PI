@@ -63,10 +63,18 @@ def popular():
     )
     print(f"-> Usuário Consultor criado/atualizado: consultor (senha: consultor123)")
 
-    # 3. Criação de Colaborador Adicional (Estagiário) para enriquecer a tabela
+    # 3. Criação de Colaborador Adicional (Estagiária) com usuário próprio de login
+    user_mariana, _ = User.objects.get_or_create(username='mariana')
+    user_mariana.set_password('mariana123')
+    user_mariana.is_staff = False
+    user_mariana.is_superuser = False
+    user_mariana.email = 'mariana@3neuron.com.br'
+    user_mariana.save()
+
     colab_estagio, _ = Colaborador.objects.get_or_create(
         cpf='999.888.777-66',
         defaults={
+            'usuario': user_mariana,
             'nome_completo': 'Mariana Souza (Estagiária)',
             'email': 'mariana@3neuron.com.br',
             'cargo': 'Estagiária de Desenvolvimento',
@@ -74,7 +82,10 @@ def popular():
             'perfil': 'CON',
         }
     )
-    print("-> Colaboradora Mariana Souza criada para enriquecer a listagem.")
+    if not colab_estagio.usuario:
+        colab_estagio.usuario = user_mariana
+        colab_estagio.save()
+    print("-> Usuária Mariana criada/atualizada: mariana (senha: mariana123)")
 
     # 4. Criação dos Registros de Horas (RF010, RF017)
     hoje = date.today()

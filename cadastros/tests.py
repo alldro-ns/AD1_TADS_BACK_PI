@@ -109,3 +109,27 @@ class SMCTests(TestCase):
         })
         self.assertRedirects(resposta, reverse('lista_horas'))
         self.assertTrue(RegistroHora.objects.filter(nome_projeto='Projeto Novo').exists())
+
+    def test_cadastrar_colaborador_cria_login_automaticamente(self):
+        self.client.login(username='admin_teste', password='senha123')
+        resposta = self.client.post(reverse('cadastrar_colaborador'), {
+            'nome_usuario': 'novo_usuario',
+            'senha': 'novasenha123',
+            'nome_completo': 'Novo Colaborador da Silva',
+            'cpf': '333.333.333-33',
+            'email': 'novo@teste.com',
+            'cargo': 'Analista de QA',
+            'tipo_contratacao': 'CLT',
+            'perfil': 'CON',
+        })
+        self.assertRedirects(resposta, reverse('lista_colaboradores'))
+        
+        # Verifica se o User do Django foi criado
+        self.assertTrue(User.objects.filter(username='novo_usuario').exists())
+        novo_user = User.objects.get(username='novo_usuario')
+        self.assertFalse(novo_user.is_staff)  # Perfil CON -> is_staff False
+        
+        # Verifica se o Colaborador foi vinculado ao novo User
+        colab = Colaborador.objects.get(cpf='333.333.333-33')
+        self.assertEqual(colab.usuario, novo_user)
+        self.assertEqual(colab.nome_completo, 'Novo Colaborador da Silva')
