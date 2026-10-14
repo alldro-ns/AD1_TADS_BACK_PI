@@ -5,8 +5,8 @@ from .models import Colaborador, RegistroHora
 
 class ColaboradorForm(forms.ModelForm):
     """
-    Formulário unificado para cadastro e edição de colaboradores e seus respectivos
-    usuários de login no Django (RF001).
+    Formulário para cadastro e edição de colaboradores e seus respectivos
+    usuários de login (RF001).
     """
     nome_usuario = forms.CharField(
         label="Nome de Usuário (Login)",

@@ -1,7 +1,7 @@
 # SMC - Sistema de Medição de Contratos
 **3Neuron Consultoria** | Trabalho Acadêmico (TADS - Back-end)
 
-Aplicação web desenvolvida em **Python** e **Django** focada em **extrema simplicidade e didática**, voltada para apresentação em vídeo.
+Aplicação web desenvolvida em **Python** e **Django**
 
 ---
 

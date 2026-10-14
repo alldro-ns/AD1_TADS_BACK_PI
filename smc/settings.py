@@ -1,6 +1,5 @@
 """
 Configurações do Django para o projeto SMC (Sistema de Medição de Contratos).
-3Neuron Consultoria - Trabalho Acadêmico
 """
 
 from pathlib import Path
