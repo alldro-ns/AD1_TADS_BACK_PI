@@ -8,7 +8,7 @@
         <div>
             <h2>Medição de Horas e Atividades</h2>
             <p style="color: var(--cor-texto-claro); font-size: 0.9rem;">
-                Apontamentos e gestão de horas em contratos/projetos (RF010, RF017)
+                Apontamentos e gestão de horas em contratos e projetos
             </p>
         </div>
 
@@ -22,7 +22,6 @@
         <strong>Modo de Exibição:</strong> {{ tipo_visao }}
     </div>
 
-    <!-- Indicadores de Totais (RF011) -->
     <div class="grid-resumo-horas">
         <div class="destaque-horas">
             <div>
@@ -47,7 +46,7 @@
         {% endif %}
     </div>
 
-    <!-- Barra de Filtros por Status (Navegação Simples) -->
+    <!-- Barra de Filtros por Status -->
     <div class="barra-filtros">
         <span class="label-filtro">Filtrar por Status:</span>
         <a href="?status=TODOS" class="btn-filtro {% if status_filtro == 'TODOS' or not status_filtro %}ativo{% endif %}">Todos</a>
@@ -57,7 +56,7 @@
     </div>
 
     {% if user.is_staff %}
-        <!-- ================= VISÃO DO ADMINISTRADOR (AGRUPADA POR FUNCIONÁRIO) ================= -->
+        <!-- Visão Administrador -->
         <div class="container-colaboradores-horas">
             {% for item in colaboradores_horas %}
                 <details class="card-colaborador-expansivel" {% if forloop.first or item.pendentes > 0 %}open{% endif %}>
@@ -127,7 +126,7 @@
         </div>
 
     {% else %}
-        <!-- ================= VISÃO DO CONSULTOR (APENAS SUAS HORAS) ================= -->
+        <!-- Visão Consultor -->
         <div class="tabela-responsiva" style="margin-top: 1.5rem;">
             <table>
                 <thead>
