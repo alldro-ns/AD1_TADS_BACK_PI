@@ -1,6 +1,4 @@
-"""
-Configurações do Django para o projeto SMC (Sistema de Medição de Contratos).
-"""
+# Configurações do projeto SMC (Sistema de Medição de Contratos)
 
 from pathlib import Path
 

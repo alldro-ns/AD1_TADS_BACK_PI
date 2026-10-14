@@ -3,9 +3,6 @@ from django.contrib.auth.models import User
 
 
 class Colaborador(models.Model):
-    """
-    Representa o cadastro de colaboradores da 3Neuron Consultoria (RF001).
-    """
     TIPOS_CONTRATACAO = {
         "CLT": "CLT",
         "EST": "Estagiário",
@@ -35,9 +32,6 @@ class Colaborador(models.Model):
 
 
 class RegistroHora(models.Model):
-    """
-    Representa o lançamento de horas trabalhadas em projetos/contratos (RF010 e RF017).
-    """
     STATUS_APROVACAO = {
         "PEN": "Pendente",
         "APR": "Aprovado",
