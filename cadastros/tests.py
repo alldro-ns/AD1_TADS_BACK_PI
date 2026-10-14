@@ -76,9 +76,9 @@ class SMCTests(TestCase):
         self.client.login(username='admin_teste', password='senha123')
         resposta = self.client.get(reverse('lista_horas'))
         self.assertEqual(resposta.status_code, 200)
-        # Admin vê os 2 registros
-        self.assertEqual(len(resposta.context['horas']), 2)
-        # Total de horas: 8.0 + 4.0 = 12.0
+        # Admin vê a lista agrupada por colaboradores
+        self.assertEqual(len(resposta.context['colaboradores_horas']), 2)
+        # Total geral de horas: 8.0 + 4.0 = 12.0
         self.assertEqual(resposta.context['total_horas'], Decimal('12.0'))
         self.assertIn("Visão Geral de Administrador", resposta.context['tipo_visao'])
 
@@ -96,6 +96,9 @@ class SMCTests(TestCase):
         resposta = self.client.get(reverse('lista_colaboradores'))
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(len(resposta.context['colaboradores']), 2)
+        # Verifica se o total_horas_acumuladas foi calculado
+        colab1 = resposta.context['colaboradores'][0]
+        self.assertTrue(hasattr(colab1, 'total_horas_acumuladas'))
 
     def test_cadastrar_horas(self):
         self.client.login(username='consultor_teste', password='senha123')
@@ -133,3 +136,27 @@ class SMCTests(TestCase):
         colab = Colaborador.objects.get(cpf='333.333.333-33')
         self.assertEqual(colab.usuario, novo_user)
         self.assertEqual(colab.nome_completo, 'Novo Colaborador da Silva')
+
+    def test_aprovar_hora_admin(self):
+        self.client.login(username='admin_teste', password='senha123')
+        self.assertEqual(self.hora2.status, 'PEN')
+        resposta = self.client.get(reverse('aprovar_hora', args=[self.hora2.id]))
+        self.assertRedirects(resposta, reverse('lista_horas'))
+        self.hora2.refresh_from_db()
+        self.assertEqual(self.hora2.status, 'APR')
+
+    def test_aprovar_hora_consultor_negado(self):
+        self.client.login(username='consultor_teste', password='senha123')
+        self.assertEqual(self.hora2.status, 'PEN')
+        resposta = self.client.get(reverse('aprovar_hora', args=[self.hora2.id]))
+        self.assertRedirects(resposta, reverse('lista_horas'))
+        self.hora2.refresh_from_db()
+        # Status deve permanecer 'PEN' pois consultor não pode aprovar
+        self.assertEqual(self.hora2.status, 'PEN')
+
+    def test_filtro_status_horas(self):
+        self.client.login(username='admin_teste', password='senha123')
+        # Filtra apenas pendentes (apenas hora2 deve aparecer)
+        resposta = self.client.get(reverse('lista_horas') + '?status=PEN')
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context['total_horas'], Decimal('4.0'))

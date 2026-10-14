@@ -101,3 +101,20 @@ class RegistroHoraForm(forms.ModelForm):
         widgets = {
             'data': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        # Se for um Consultor (não-admin), fixa o colaborador e o status como Pendente
+        if user and not user.is_staff:
+            colab = Colaborador.objects.filter(usuario=user).first()
+            if colab:
+                self.fields['colaborador'].queryset = Colaborador.objects.filter(pk=colab.pk)
+                self.fields['colaborador'].initial = colab
+                self.fields['colaborador'].disabled = True
+                self.fields['colaborador'].help_text = "Apontamento vinculado ao seu usuário logado."
+
+            self.fields['status'].initial = 'PEN'
+            self.fields['status'].disabled = True
+            self.fields['status'].help_text = "Novos lançamentos iniciam como 'Pendente' para avaliação da gestão."

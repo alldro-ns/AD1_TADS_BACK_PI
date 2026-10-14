@@ -447,6 +447,268 @@ textarea {
     font-family: monospace;
 }
 
+/* ---------------- Mensagens de Alerta (Django Messages) ---------------- */
+.mensagens-container {
+    margin-bottom: 1.5rem;
+}
+
+.alerta {
+    padding: 0.85rem 1.2rem;
+    border-radius: var(--raio-borda);
+    font-size: 0.92rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.alerta-success {
+    background-color: var(--cor-sucesso-bg);
+    color: var(--cor-sucesso);
+    border: 1px solid #b7e4c7;
+}
+
+.alerta-info {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.alerta-warning {
+    background-color: var(--cor-alerta-bg);
+    color: var(--cor-alerta);
+    border: 1px solid #e9d8a6;
+}
+
+.alerta-error {
+    background-color: var(--cor-ajuste-bg);
+    color: var(--cor-ajuste);
+    border: 1px solid #f4a261;
+}
+
+/* ---------------- Grid de Métricas do Dashboard ---------------- */
+.grid-metricas-home {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin: 1.5rem 0;
+}
+
+.card-metrica {
+    background-color: #ffffff;
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-borda);
+    padding: 1.35rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-metrica:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.card-metrica.destaque-alerta {
+    border-color: #f4a261;
+    background: linear-gradient(to bottom, #ffffff, #fffaf5);
+}
+
+.metrica-rotulo {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cor-texto-claro);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metrica-valor {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--cor-primaria);
+    margin: 0.4rem 0 0.2rem 0;
+    line-height: 1.1;
+}
+
+.metrica-detalhe {
+    font-size: 0.85rem;
+    color: var(--cor-texto-claro);
+}
+
+/* ---------------- Resumo de Horas e Pendências ---------------- */
+.grid-resumo-horas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.destaque-pendencias {
+    background: linear-gradient(135deg, #b07d10 0%, #d4a373 100%);
+    color: #ffffff;
+    padding: 1.2rem 1.5rem;
+    border-radius: var(--raio-borda);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.destaque-pendencias span {
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.destaque-pendencias strong {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+/* ---------------- Barra de Filtros ---------------- */
+.barra-filtros {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.85rem 1rem;
+    background-color: #f8fafc;
+    border-radius: var(--raio-borda);
+    border: 1px solid var(--cor-borda);
+    margin-bottom: 1.5rem;
+}
+
+.label-filtro {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cor-texto-claro);
+    margin-right: 0.3rem;
+}
+
+.btn-filtro {
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--cor-texto);
+    background-color: #ffffff;
+    border: 1px solid var(--cor-borda);
+    transition: all 0.2s ease;
+}
+
+.btn-filtro:hover {
+    background-color: #e2e8f0;
+}
+
+.btn-filtro.ativo {
+    background-color: var(--cor-primaria);
+    color: #ffffff;
+    border-color: var(--cor-primaria);
+}
+
+/* ---------------- Cards Expansíveis (<details> e <summary>) ---------------- */
+.container-colaboradores-horas {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.card-colaborador-expansivel {
+    background-color: #ffffff;
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-borda);
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-colaborador-expansivel[open] {
+    border-color: var(--cor-secundaria);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.summary-colaborador {
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.1rem 1.4rem;
+    background-color: #ffffff;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.15s ease;
+}
+
+.summary-colaborador::-webkit-details-marker {
+    display: none;
+}
+
+.summary-colaborador:hover {
+    background-color: #f8fafc;
+}
+
+.card-colaborador-expansivel[open] .summary-colaborador {
+    border-bottom-color: var(--cor-borda);
+    background-color: #f8fafc;
+}
+
+.summary-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.icone-expansao {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 8px solid var(--cor-texto-claro);
+    transition: transform 0.2s ease;
+}
+
+.card-colaborador-expansivel[open] .icone-expansao {
+    transform: rotate(90deg);
+    border-left-color: var(--cor-secundaria);
+}
+
+.nome-colaborador {
+    font-size: 1.05rem;
+    color: var(--cor-primaria);
+    display: block;
+}
+
+.meta-colaborador {
+    font-size: 0.82rem;
+    color: var(--cor-texto-claro);
+}
+
+.summary-totais {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.total-horas-tag {
+    background-color: #e2e8f0;
+    padding: 0.35rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.88rem;
+    color: #334155;
+}
+
+.total-horas-tag strong {
+    color: var(--cor-primaria);
+}
+
+.conteudo-detalhes-horas {
+    padding: 1rem 1.25rem 1.25rem 1.25rem;
+    background-color: #ffffff;
+}
+
 /* ---------------- Rodapé ---------------- */
 footer {
     background-color: #ffffff;

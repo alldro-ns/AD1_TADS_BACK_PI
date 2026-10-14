@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
 from .models import Colaborador, RegistroHora
 from .forms import ColaboradorForm, RegistroHoraForm
 
@@ -19,6 +20,7 @@ def login_view(request):
         if form.is_valid():
             usuario = form.get_user()
             login(request, usuario)
+            messages.success(request, f"Bem-vindo(a) ao SMC, {usuario.username}!")
             return redirect('home')
         else:
             mensagem_erro = "Usuário ou senha inválidos. Por favor, tente novamente."
@@ -36,29 +38,55 @@ def logout_view(request):
     Encerra a sessão do usuário e redireciona para a página de login.
     """
     logout(request)
+    messages.info(request, "Sessão encerrada com sucesso.")
     return redirect('login')
 
 
 @login_required
 def home(request):
     """
-    Página inicial do sistema SMC, com resumo geral e perfil do usuário logado.
+    Página inicial do sistema SMC com indicadores práticos e atalhos rápidos.
     """
-    total_colaboradores = Colaborador.objects.count()
-    total_registros = RegistroHora.objects.count()
+    if request.user.is_staff:
+        # Métricas para Administrador
+        total_colaboradores = Colaborador.objects.count()
+        total_registros = RegistroHora.objects.count()
+        total_horas_geral = sum(r.horas_trabalhadas for r in RegistroHora.objects.all())
+        total_pendentes = RegistroHora.objects.filter(status='PEN').count()
 
-    return render(request, 'home.html', {
-        'total_colaboradores': total_colaboradores,
-        'total_registros': total_registros,
-    })
+        contexto = {
+            'total_colaboradores': total_colaboradores,
+            'total_registros': total_registros,
+            'total_horas_geral': total_horas_geral,
+            'total_pendentes': total_pendentes,
+        }
+    else:
+        # Métricas para Consultor individual
+        colaborador = Colaborador.objects.filter(usuario=request.user).first()
+        minhas_horas_regs = RegistroHora.objects.filter(colaborador=colaborador) if colaborador else []
+        total_minhas_horas = sum(r.horas_trabalhadas for r in minhas_horas_regs)
+        minhas_pendentes = sum(1 for r in minhas_horas_regs if r.status == 'PEN')
+        minhas_aprovadas = sum(1 for r in minhas_horas_regs if r.status == 'APR')
+
+        contexto = {
+            'colaborador': colaborador,
+            'total_minhas_horas': total_minhas_horas,
+            'minhas_pendentes': minhas_pendentes,
+            'minhas_aprovadas': minhas_aprovadas,
+        }
+
+    return render(request, 'home.html', contexto)
 
 
 @login_required
 def lista_colaboradores(request):
     """
-    Listagem de todos os colaboradores cadastrados.
+    Listagem de todos os colaboradores cadastrados, incluindo total de horas acumuladas.
     """
-    colaboradores = Colaborador.objects.all().order_by('nome_completo')
+    colaboradores = list(Colaborador.objects.all().order_by('nome_completo'))
+    for colab in colaboradores:
+        colab.total_horas_acumuladas = sum(r.horas_trabalhadas for r in colab.registrohora_set.all())
+
     return render(request, 'lista_colaboradores.html', {
         'colaboradores': colaboradores
     })
@@ -69,10 +97,15 @@ def cadastrar_colaborador(request):
     """
     Cadastro de um novo colaborador (Apenas Admin via interface).
     """
+    if not request.user.is_staff:
+        messages.error(request, "Apenas administradores podem cadastrar novos colaboradores.")
+        return redirect('lista_colaboradores')
+
     if request.method == 'POST':
         form = ColaboradorForm(request.POST)
         if form.is_valid():
-            form.save()
+            colab = form.save()
+            messages.success(request, f"Colaborador(a) {colab.nome_completo} cadastrado(a) com sucesso!")
             return redirect('lista_colaboradores')
     else:
         form = ColaboradorForm()
@@ -88,12 +121,17 @@ def editar_colaborador(request, id):
     """
     Edição dos dados de um colaborador existente.
     """
+    if not request.user.is_staff:
+        messages.error(request, "Apenas administradores podem editar colaboradores.")
+        return redirect('lista_colaboradores')
+
     colaborador = get_object_or_404(Colaborador, id=id)
 
     if request.method == 'POST':
         form = ColaboradorForm(request.POST, instance=colaborador)
         if form.is_valid():
             form.save()
+            messages.success(request, f"Dados de {colaborador.nome_completo} atualizados com sucesso!")
             return redirect('lista_colaboradores')
     else:
         form = ColaboradorForm(instance=colaborador)
@@ -109,33 +147,107 @@ def excluir_colaborador(request, id):
     """
     Exclusão de um colaborador.
     """
+    if not request.user.is_staff:
+        messages.error(request, "Apenas administradores podem excluir colaboradores.")
+        return redirect('lista_colaboradores')
+
     colaborador = get_object_or_404(Colaborador, id=id)
-    colaborador.delete()
+    nome = colaborador.nome_completo
+    # Se tiver usuário vinculado, exclui o usuário também
+    if colaborador.usuario:
+        colaborador.usuario.delete()
+    else:
+        colaborador.delete()
+
+    messages.info(request, f"Colaborador {nome} foi removido do sistema.")
     return redirect('lista_colaboradores')
 
 
 @login_required
 def lista_horas(request):
     """
-    Listagem de horas trabalhadas com diferenciação por perfil:
-    - Admin (is_staff=True): vê todos os registros de todos os consultores.
-    - Consultor (is_staff=False): vê apenas as suas próprias horas registradas.
+    Listagem de horas trabalhadas com diferenciação prática por perfil:
+    - Admin (is_staff=True): agrupa por funcionário exibindo o total acumulado
+      por funcionário, com expansão dos apontamentos individuais e aprovação rápida.
+    - Consultor (is_staff=False): exibe diretamente os seus próprios registros.
     """
+    status_filtro = request.GET.get('status', 'TODOS').upper()
+    valid_statuses = ['PEN', 'APR', 'AJU']
+
     if request.user.is_staff:
-        horas = RegistroHora.objects.all().order_by('-data')
-        tipo_visao = "Visão Geral de Administrador (Todos os Consultores)"
+        tipo_visao = "Visão Geral de Administrador (Total por Funcionário com Expansão)"
+        colaboradores_horas = []
+        total_geral = 0
+        total_pendencias = 0
+
+        for colab in Colaborador.objects.all().order_by('nome_completo'):
+            qs = colab.registrohora_set.all()
+            if status_filtro in valid_statuses:
+                qs = qs.filter(status=status_filtro)
+            registros = list(qs.order_by('-data'))
+
+            if registros:
+                subtotal = sum(r.horas_trabalhadas for r in registros)
+                pendentes = sum(1 for r in registros if r.status == 'PEN')
+                total_geral += subtotal
+                total_pendencias += pendentes
+
+                colaboradores_horas.append({
+                    'colaborador': colab,
+                    'registros': registros,
+                    'total_horas': subtotal,
+                    'total_registros': len(registros),
+                    'pendentes': pendentes,
+                })
+
+        return render(request, 'lista_horas.html', {
+            'colaboradores_horas': colaboradores_horas,
+            'total_horas': total_geral,
+            'total_pendencias': total_pendencias,
+            'tipo_visao': tipo_visao,
+            'status_filtro': status_filtro,
+        })
+
     else:
-        horas = RegistroHora.objects.filter(colaborador__usuario=request.user).order_by('-data')
-        tipo_visao = "Visão do Consultor (Apenas Minhas Horas)"
+        # Visão Consultor
+        tipo_visao = "Visão do Consultor (Minhas Horas Registradas)"
+        colaborador = Colaborador.objects.filter(usuario=request.user).first()
+        qs = RegistroHora.objects.filter(colaborador=colaborador) if colaborador else RegistroHora.objects.none()
 
-    # Soma simples das horas exibidas na lista atual (RF011)
-    total_horas = sum(item.horas_trabalhadas for item in horas)
+        if status_filtro in valid_statuses:
+            qs = qs.filter(status=status_filtro)
 
-    return render(request, 'lista_horas.html', {
-        'horas': horas,
-        'total_horas': total_horas,
-        'tipo_visao': tipo_visao,
-    })
+        horas = list(qs.order_by('-data'))
+        total_horas = sum(item.horas_trabalhadas for item in horas)
+        total_pendencias = sum(1 for item in horas if item.status == 'PEN')
+
+        return render(request, 'lista_horas.html', {
+            'horas': horas,
+            'total_horas': total_horas,
+            'total_pendencias': total_pendencias,
+            'tipo_visao': tipo_visao,
+            'status_filtro': status_filtro,
+        })
+
+
+@login_required
+def aprovar_hora(request, id):
+    """
+    Ação rápida para Administrador aprovar um apontamento de horas com 1 clique (RF017).
+    """
+    if not request.user.is_staff:
+        messages.error(request, "Apenas administradores podem aprovar registros de horas.")
+        return redirect('lista_horas')
+
+    registro = get_object_or_404(RegistroHora, id=id)
+    registro.status = 'APR'
+    registro.save()
+
+    messages.success(
+        request,
+        f"Apontamento de {registro.horas_trabalhadas}h do projeto '{registro.nome_projeto}' ({registro.colaborador.nome_completo}) foi aprovado!"
+    )
+    return redirect('lista_horas')
 
 
 @login_required
@@ -143,24 +255,33 @@ def registrar_horas(request):
     """
     Lançamento de novo registro de horas trabalhadas.
     """
+    colaborador_vinculado = None
+    if not request.user.is_staff:
+        colaborador_vinculado = Colaborador.objects.filter(usuario=request.user).first()
+
     if request.method == 'POST':
-        form = RegistroHoraForm(request.POST)
+        form = RegistroHoraForm(request.POST, user=request.user)
         if form.is_valid():
-            form.save()
+            registro = form.save(commit=False)
+            # Se for consultor, fixa o colaborador e força status PEN (Pendente)
+            if not request.user.is_staff and colaborador_vinculado:
+                registro.colaborador = colaborador_vinculado
+                registro.status = 'PEN'
+            registro.save()
+            messages.success(request, f"Apontamento de {registro.horas_trabalhadas}h registrado com sucesso!")
             return redirect('lista_horas')
     else:
-        # Se for consultor, pré-seleciona seu colaborador no formulário
         dados_iniciais = {}
-        if not request.user.is_staff:
-            colaborador_vinculado = Colaborador.objects.filter(usuario=request.user).first()
-            if colaborador_vinculado:
-                dados_iniciais['colaborador'] = colaborador_vinculado
+        if not request.user.is_staff and colaborador_vinculado:
+            dados_iniciais['colaborador'] = colaborador_vinculado
+            dados_iniciais['status'] = 'PEN'
 
-        form = RegistroHoraForm(initial=dados_iniciais)
+        form = RegistroHoraForm(initial=dados_iniciais, user=request.user)
 
     return render(request, 'form_horas.html', {
         'form': form,
-        'titulo': 'Registrar Atividade e Horas'
+        'titulo': 'Registrar Atividade e Horas',
+        'colaborador_fixo': colaborador_vinculado if not request.user.is_staff else None
     })
 
 
@@ -171,13 +292,23 @@ def editar_horas(request, id):
     """
     registro = get_object_or_404(RegistroHora, id=id)
 
+    # Consultor só pode editar suas próprias horas
+    if not request.user.is_staff and registro.colaborador.usuario != request.user:
+        messages.error(request, "Você não tem permissão para editar apontamentos de outros colaboradores.")
+        return redirect('lista_horas')
+
     if request.method == 'POST':
-        form = RegistroHoraForm(request.POST, instance=registro)
+        form = RegistroHoraForm(request.POST, instance=registro, user=request.user)
         if form.is_valid():
-            form.save()
+            reg_salvo = form.save(commit=False)
+            # Se for consultor editando, mantém em pendente para reavaliação
+            if not request.user.is_staff:
+                reg_salvo.status = 'PEN'
+            reg_salvo.save()
+            messages.success(request, f"Registro do projeto '{reg_salvo.nome_projeto}' atualizado com sucesso!")
             return redirect('lista_horas')
     else:
-        form = RegistroHoraForm(instance=registro)
+        form = RegistroHoraForm(instance=registro, user=request.user)
 
     return render(request, 'form_horas.html', {
         'form': form,
@@ -191,5 +322,13 @@ def excluir_horas(request, id):
     Exclusão de um apontamento de horas.
     """
     registro = get_object_or_404(RegistroHora, id=id)
+
+    # Consultor só pode excluir suas próprias horas
+    if not request.user.is_staff and registro.colaborador.usuario != request.user:
+        messages.error(request, "Você não tem permissão para excluir apontamentos de outros colaboradores.")
+        return redirect('lista_horas')
+
+    projeto = registro.nome_projeto
     registro.delete()
+    messages.info(request, f"Apontamento do projeto '{projeto}' foi excluído.")
     return redirect('lista_horas')

@@ -8,6 +8,12 @@
         <h2>{{ titulo }}</h2>
     </div>
 
+    {% if colaborador_fixo %}
+        <div class="aviso-visao" style="margin-bottom: 1.5rem;">
+            Apontando horas para: <strong>{{ colaborador_fixo.nome_completo }}</strong> ({{ colaborador_fixo.cargo }})
+        </div>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
