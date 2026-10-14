@@ -18,7 +18,7 @@
     </div>
 
     {% if user.is_staff %}
-        <!-- ================= DASHBOARD DO ADMINISTRADOR ================= -->
+        <!-- Dashboard Administrador -->
         <p>
             Visão consolidada da consultoria. Acompanhe a produtividade dos consultores e aprove apontamentos pendentes.
         </p>
@@ -57,7 +57,7 @@
         </div>
 
     {% else %}
-        <!-- ================= DASHBOARD DO CONSULTOR ================= -->
+        <!-- Dashboard Consultor -->
         <p>
             Olá, <strong>{{ colaborador.nome_completo|default:user.username }}</strong>! 
             Aqui está o resumo dos seus lançamentos de atividades e contratos.

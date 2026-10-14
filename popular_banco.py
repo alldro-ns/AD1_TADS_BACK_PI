@@ -1,7 +1,4 @@
-"""
-Script para popular o banco de dados do SMC (3Neuron Consultoria) com dados iniciais de teste.
-Execução: python popular_banco.py
-"""
+# Script para popular o banco de dados com dados de teste
 
 import os
 import django
@@ -87,7 +84,7 @@ def popular():
         colab_estagio.save()
     print("-> Usuária Mariana criada/atualizada: mariana (senha: mariana123)")
 
-    # 4. Criação dos Registros de Horas (RF010, RF017)
+    # 4. Criação dos Registros de Horas
     hoje = date.today()
 
     registros_teste = [
